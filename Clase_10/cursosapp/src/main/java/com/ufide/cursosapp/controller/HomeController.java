@@ -20,8 +20,8 @@ public class HomeController {
     // SecurityConfig ya usa .loginPage("/login"), pero eso solo le dice a
     // Spring Security A DONDE redirigir - alguien tiene que servir esa vista.
     // Sin este mapping, /login responde 404 (Whitelabel Error Page).
-    // @GetMapping("/login")
-    // public String login() {
-    //     return "login";
-    // }
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
 }

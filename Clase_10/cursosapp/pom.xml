@@ -35,7 +35,7 @@
             BCryptPasswordEncoder, formLogin(), etc.
           - thymeleaf-extras-springsecurity6: agrega el dialecto sec: para
             usar sec:authorize / sec:authentication en los templates.
-
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -45,7 +45,6 @@
             <groupId>org.thymeleaf.extras</groupId>
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
         </dependency>
-        -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
