@@ -1,5 +1,7 @@
 package com.ufide.cursosapp.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -36,14 +39,30 @@ public class Usuario {
     @Column(nullable = false)
     private String rol;
 
+    // CLASE 11 - PASO F.1: email para recuperacion de contrasena (Parte G).
+    // Se valida en el formulario (@NotBlank/@Email) pero la columna queda
+    // nullable a nivel de base de datos, para no romper las filas que ya
+    // existian de S10 cuando Hibernate agregue esta columna con ddl-auto=update.
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El email no tiene un formato valido")
+    private String email;
+
+    // CLASE 11 - PASO G.1: token de un solo uso para restablecer la
+    // contrasena, con su fecha de expiracion. UsuarioService los genera en
+    // generarTokenReset() y los limpia (vuelven a null) apenas se usan una
+    // vez - ver cambiarPassword().
+    private String resetToken;
+    private LocalDateTime resetTokenExpiracion;
+
     public Usuario() {
     }
 
-    public Usuario(Long id, String username, String password, String rol) {
+    public Usuario(Long id, String username, String password, String rol, String email) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.rol = rol;
+        this.email = email;
     }
 
     public Long getId() { return id; }
@@ -57,4 +76,13 @@ public class Usuario {
 
     public String getRol() { return rol; }
     public void setRol(String rol) { this.rol = rol; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+
+    public LocalDateTime getResetTokenExpiracion() { return resetTokenExpiracion; }
+    public void setResetTokenExpiracion(LocalDateTime resetTokenExpiracion) { this.resetTokenExpiracion = resetTokenExpiracion; }
 }

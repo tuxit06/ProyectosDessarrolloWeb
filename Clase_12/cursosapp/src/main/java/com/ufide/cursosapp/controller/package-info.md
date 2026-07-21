@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +53,12 @@ public class CursoRestController {
     // POST /api/cursos -> 201 Created + Location header + el curso creado.
     // Body esperado (JSON):
     // { "nombre": "...", "descripcion": "...", "creditos": 4, "profesor": { "id": 1 } }
+    //
+    // CLASE 12 - PASO E.5: cuando llegues a la Parte E (JWT), descomenta la
+    // linea @PreAuthorize de abajo - es EXACTAMENTE la misma anotacion que
+    // usa CursoController (S11) para las vistas HTML. No le importa si el
+    // Authentication vino de una sesion o de un JWT valido.
+    // @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Curso> crear(@Valid @RequestBody Curso curso) {
         Curso guardado = cursoService.guardar(curso);
@@ -63,6 +70,8 @@ public class CursoRestController {
     }
 
     // PUT /api/cursos/{id} -> 200 OK + curso actualizado, o 404 si no existe.
+    // CLASE 12 - PASO E.5: descomentar junto con la de arriba.
+    // @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Curso> actualizar(@PathVariable Long id, @Valid @RequestBody Curso curso) {
         if (cursoService.buscarPorId(id).isEmpty()) {
@@ -73,6 +82,8 @@ public class CursoRestController {
     }
 
     // DELETE /api/cursos/{id} -> 204 No Content si se borro, 404 si no existia.
+    // CLASE 12 - PASO E.5: descomentar junto con las dos de arriba.
+    // @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (cursoService.buscarPorId(id).isEmpty()) {
@@ -83,3 +94,100 @@ public class CursoRestController {
     }
 }
 ```
+
+---
+
+CLASE 12 - PASO D.2: crear `RolRestController.java` en este paquete (`controller/`) copiando el bloque de abajo. Requiere haber hecho antes el PASO D.1 (`security/Rol.java`).
+
+```java
+package com.ufide.cursosapp.controller;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.ufide.cursosapp.security.Rol;
+
+// GET /api/roles -> 200 + JSON con los roles disponibles en el sistema,
+// leidos directo del enum Rol (una sola fuente de verdad, en vez de tener
+// la lista de roles repetida en varios lugares).
+//
+// Requiere estar autenticado (cualquier JWT valido alcanza - no hace falta
+// ser ADMIN).
+@RestController
+@RequestMapping("/api/roles")
+public class RolRestController {
+
+    @GetMapping
+    public List<String> listar() {
+        return Arrays.stream(Rol.values())
+                .map(Enum::name)
+                .toList();
+    }
+}
+```
+
+---
+
+CLASE 12 - PASO E.3: crear `AuthController.java` en este paquete (`controller/`) copiando el bloque de abajo. Requiere haber hecho antes los PASO E.1 (`security/JwtService.java`) y el bean `authenticationManager` del PASO E.4 en `SecurityConfig.java`.
+
+```java
+package com.ufide.cursosapp.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.ufide.cursosapp.security.JwtService;
+
+// Unico endpoint publico de /api/** (junto con el propio login por
+// formulario de las vistas HTML, que no toca esta clase). Recibe
+// username+password, reutiliza el AuthenticationManager que Spring Security
+// ya usa por debajo para el login de sesion, y si las credenciales son
+// validas devuelve un JWT en vez de crear una sesion.
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtService jwtService;
+
+    // POST /api/auth/login -> 200 + { "token": "..." }
+    // Si las credenciales son invalidas, authenticationManager.authenticate()
+    // lanza una excepcion (BadCredentialsException) que Spring Security
+    // convierte automaticamente en un 401 - no hace falta capturarla a mano.
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+        );
+
+        String rol = auth.getAuthorities().stream()
+                .findFirst()
+                .map(GrantedAuthority::getAuthority)
+                .orElse("");
+
+        String token = jwtService.generarToken(request.username(), rol);
+        return ResponseEntity.ok(new LoginResponse(token));
+    }
+
+    public record LoginRequest(String username, String password) {}
+
+    public record LoginResponse(String token) {}
+}
+```
+
+Nota: este paquete ya existe (tiene `CursoController.java`, `HomeController.java`, `UsuarioController.java`, `PasswordResetController.java` de clases anteriores) - solo hace falta agregar los archivos nuevos al lado.

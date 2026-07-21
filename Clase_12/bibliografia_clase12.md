@@ -1,6 +1,21 @@
-# Bibliografía de repaso — Clase 12: APIs REST (JSON)
+# Bibliografía de repaso — Clase 12: APIs REST, constantes de rol y JWT
 
 Este documento es para releer después de la clase, con calma, usando como referencia el proyecto `cursosapp` y las slides que ya tenés. No repite el paso a paso del lab (eso está en `lab_clase12.md`) — acá el objetivo es que entiendas **por qué** funciona cada cosa.
+
+---
+
+## 0. Qué es una API REST, y por qué HTTP es "sin estado"
+
+Una API es un contrato: URLs que representan recursos (`/api/cursos`, `/api/cursos/3`), y verbos HTTP que definen la acción sobre ese recurso (`GET` leer, `POST` crear, `PUT` actualizar, `DELETE` eliminar).
+
+HTTP es **stateless** por diseño: el servidor no recuerda nada entre un request y el siguiente, salvo que algo se lo recuerde artificialmente. Para las vistas HTML, ese "algo" es la cookie de sesión (`JSESSIONID`) que ya usás desde S10. Para una API, en vez de simular estado con cookies, cada request trae su propia credencial — hoy ese "algo" va a ser un JWT (ver sección 6).
+
+Los verbos HTTP tienen semántica esperada, aunque Spring no la fuerce por sí solo:
+- **`GET` es "seguro"** — no debería modificar nada en el servidor.
+- **`PUT` y `DELETE` son "idempotentes"** — repetir el mismo request no cambia el resultado más allá de la primera vez (borrar el mismo id dos veces deja el mismo estado que borrarlo una vez).
+- **`POST` no es ninguna de las dos cosas** — cada `POST` puede crear un recurso nuevo distinto.
+
+Los códigos de estado HTTP vienen agrupados por familia: `2xx` éxito, `3xx` redirección, `4xx` error del cliente (el request está mal armado o no tiene permiso), `5xx` error del servidor. En este lab usaste `200`, `201`, `204` (éxito) y `400`, `401`, `403`, `404` (error del cliente).
 
 ---
 
@@ -76,21 +91,59 @@ CORS (Cross-Origin Resource Sharing) es una restricción que aplican **los naveg
 
 ---
 
-## 7. Por qué `/api/**` queda público en este lab
+## 7. Por qué `/api/**` empezó pública, y por qué eso cambió en la Parte E
 
-Es una decisión de alcance, no un descuido: proteger una API sin sesión (donde el cliente no es un navegador con cookies) normalmente requiere un esquema distinto a `formLogin()` — típicamente tokens (JWT) o API keys, enviados en cada request vía header `Authorization`. Ese tema queda fuera del alcance de este curso; lo que importa hoy es entender `@RestController`/JSON/CORS. En un proyecto real, no dejarías una API de escritura (POST/PUT/DELETE) completamente pública.
+Al principio de la clase (Partes A-C), dejar `/api/**` pública fue una decisión de alcance temporal: permite entender `@RestController`/JSON/CORS sin la complejidad de tokens desde el minuto uno. Eso NO es la decisión final — en la Parte E la reemplazaste por JWT, exactamente porque en un proyecto real no dejarías una API de escritura (POST/PUT/DELETE) completamente pública.
 
 ---
 
-## 8. Repaso rápido — dudas frecuentes
+## 8. Tabla de constantes de rol — el enum `Rol`
+
+Antes de esta clase, el rol de un usuario era un `String` suelto ("ADMIN", "USER") escrito a mano en varios lugares. Nada impedía un typo ("Admin", "ADMN") que la aplicación aceptaba sin quejarse — ese usuario quedaba con un rol que nunca iba a coincidir con ningún `hasRole(...)`.
+
+El enum `Rol { ADMIN, USER }` no cambia cómo funciona `@PreAuthorize("hasRole('ADMIN')")` (esa expresión SpEL sigue siendo un string) — pero sí evita el error en cualquier código Java que use `Rol.ADMIN` en vez de escribir el string a mano, y sirve como fuente única de verdad sobre qué roles existen (por eso `RolRestController` los expone vía `GET /api/roles` — útil para armar un `<select>` en un formulario de creación de usuarios, por ejemplo). `UsuarioService.validarRol()` usa ese mismo enum para rechazar un rol inválido con un error claro, en vez de guardarlo silenciosamente.
+
+---
+
+## 9. JWT — la estructura y el flujo completo
+
+Un JWT tiene tres partes separadas por puntos, cada una en Base64: `header.payload.signature`.
+
+- **Header:** qué algoritmo de firma se usó (en este lab, HMAC-SHA256).
+- **Payload (claims):** los datos que el servidor decidió incluir — acá, el `username` (como *subject*) y el `rol`.
+- **Signature:** una firma criptográfica calculada con una clave secreta que solo el servidor conoce. Si alguien modifica el payload sin volver a firmarlo con esa clave, la firma deja de coincidir y el servidor rechaza el token.
+
+El flujo completo que implementaste:
+
+1. `POST /api/auth/login` con `username`+`password` → `AuthController` reutiliza el `AuthenticationManager` de Spring Security (el mismo mecanismo interno que usa `formLogin()`) para validar la credencial.
+2. Si es válida, `JwtService.generarToken(...)` arma el JWT con el username y el rol, firmado y con expiración (1 hora en este lab).
+3. El cliente guarda ese token y lo manda en cada request futuro: header `Authorization: Bearer <token>`.
+4. `JwtAuthFilter` (un filtro que corre en cada request) lee ese header, valida la firma y la expiración, y si todo está bien arma un `Authentication` — el mismo tipo de objeto que `formLogin()` deja en el `SecurityContext` para una sesión de navegador.
+5. `@PreAuthorize("hasRole('ADMIN')")` en `CursoRestController` evalúa ese `Authentication` exactamente igual que lo hace en `CursoController` para las vistas HTML — no le importa si vino de una sesión o de un JWT.
+
+**Detalle de seguridad para tener en cuenta:** si alguien roba un JWT válido, puede seguir usándolo hasta que expire, aunque cambies tu contraseña — a diferencia de invalidar una sesión del lado del servidor (que sí se puede hacer al instante). Por eso la expiración corta (1 hora) es una decisión de seguridad, no solo un detalle técnico.
+
+---
+
+## 10. Microservicios — qué son, y por qué no se implementan en este curso
+
+Un microservicio divide una aplicación en varios servicios independientes (cada uno con su propio deploy, y a veces su propia base de datos), que se comunican entre sí por red (típicamente APIs REST, como las que armaste hoy). `cursosapp` es lo opuesto: un **monolito** — un solo deploy, una sola base de datos, un solo repositorio.
+
+Dividir en microservicios tiene sentido a partir de cierta escala (equipos grandes que necesitan desplegar partes de la app de forma independiente, sin bloquearse entre sí), pero introduce complejidad real: comunicación entre servicios que puede fallar en tránsito, consistencia de datos repartida en varias bases, más piezas que monitorear. Para un proyecto del tamaño del curso, esa complejidad no se justifica — por eso se menciona como concepto, sin implementarlo.
+
+---
+
+## 11. Repaso rápido — dudas frecuentes
 
 | Duda | Respuesta |
 |---|---|
 | ¿`@RestController` reemplaza a `@Controller`? | No — conviven. Usás `@Controller` cuando querés devolver vistas HTML, `@RestController` cuando querés devolver JSON. `cursosapp` tiene ambos. |
 | ¿Por qué mi POST devuelve 400 y no entiendo por qué? | Revisá el JSON del body — probablemente falta un campo validado, o el `profesor` no trae un `id` válido. |
-| ¿Postman necesita estar logueado para llamar la API? | No, en este lab `/api/**` es público. Si más adelante se protegiera, necesitaría un mecanismo distinto al login por formulario (JWT, API key). |
+| ¿Postman necesita estar logueado para llamar la API? | Sí, desde la Parte E — hay que pedir un JWT primero (`POST /api/auth/login`) y mandarlo en cada request (`Authorization: Bearer <token>`). |
 | Mi frontend en React no puede llamar la API, dice error de CORS | Revisá que el origen exacto (con el puerto) esté en `setAllowedOrigins(...)` de `CorsConfig`, y que `.cors(cors -> {})` esté activo en `SecurityConfig`. |
 | ¿Por qué `listar()` no puede usar el mismo método que ya tenía el `CursoController`? | Sí puede, pero ese método (`listar()` a secas) no resuelve `profesor` — por eso la API usa `listarConProfesor()`, igual que la vista HTML desde S9. |
+| ¿`hasRole('ADMIN')` deja de funcionar si uso el enum `Rol`? | No — siguen siendo compatibles. El enum ayuda en el código Java (evita typos), pero `@PreAuthorize` sigue leyendo un string. |
+| ¿Qué pasa si mi JWT expiró? | El request falla (401) y hay que volver a pedir un token con `POST /api/auth/login` — no hay renovación automática en este lab. |
 
 ---
 
@@ -103,3 +156,7 @@ Es una decisión de alcance, no un descuido: proteger una API sin sesión (donde
 | Spring — CORS Support | https://docs.spring.io/spring-framework/reference/web/webmvc-cors.html |
 | Baeldung — Spring Boot Bean Validation | https://www.baeldung.com/spring-boot-bean-validation |
 | MDN — Cross-Origin Resource Sharing (CORS) | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS |
+| jwt.io — Introduction to JSON Web Tokens | https://jwt.io/introduction |
+| Baeldung — JWT with Spring Security | https://www.baeldung.com/spring-security-oauth-jwt |
+| Baeldung — Introduction to Microservices | https://www.baeldung.com/cs/microservices |
+| martinfowler.com — Microservices | https://martinfowler.com/articles/microservices.html |

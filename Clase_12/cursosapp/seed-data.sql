@@ -1,8 +1,10 @@
 -- ============================================================
--- Seed data - cursosapp (S11: Spring Security - @PreAuthorize + roles + 403)
+-- Seed data - cursosapp (S12: APIs REST - mismos datos, ahora tambien via JSON)
 -- ============================================================
--- Mismos datos que S10 - la tabla usuarios ya tenia el campo rol listo,
--- ahora S11 lo usa de verdad con @PreAuthorize en CursoController.
+-- Mismos datos que S9-S11 - la API REST de S12 (/api/cursos) lee y escribe
+-- sobre las mismas tablas, no hace falta ningun dato nuevo. La tabla
+-- usuarios ya incluye el campo email (heredado de la version actualizada
+-- de S11 - CRUD de Usuarios + recuperacion de contrasena).
 --
 -- Ejecutar en MySQL Workbench DESPUES de:
 --   1) Haber creado la BD cursoswebdb
@@ -60,20 +62,20 @@ SELECT c.id, c.nombre, c.creditos, p.nombre AS profesor
 FROM cursos c
 JOIN profesores p ON p.id = c.profesor_id;
 
--- 3) Insertar usuarios de prueba.
+-- 3) Insertar usuarios de prueba (ya con email - heredado de S11 actualizado).
 -- IMPORTANTE: estos hashes ya vienen procesados con BCrypt (cost 10).
 -- NUNCA insertar la contrasena en texto plano.
 -- Contrasena real de cada uno (solo para el lab):
 --   admin      -> admin123
 --   profesor   -> profesor123
 --   estudiante -> estudiante123
-INSERT INTO usuarios (username, password, rol) VALUES
-('admin', '$2b$10$Qj/x8JpJMw7eOP7tPSqyRO9.IqRQQSyDWMQUUy/1mI0IJTPy5eSIq', 'ADMIN'),
-('profesor', '$2b$10$aCb2CqrheWlQh7h0KM9/3etUtNdfqWgzByyBjCtOAsIIS0SmBlkXe', 'USER'),
-('estudiante', '$2b$10$2Ki/2UdNHxrBaMkKF/ITVOmVvsFxtvh1mVKH1Udma5InIWb7NdsKC', 'USER');
+INSERT INTO usuarios (username, password, rol, email) VALUES
+('admin', '$2b$10$Qj/x8JpJMw7eOP7tPSqyRO9.IqRQQSyDWMQUUy/1mI0IJTPy5eSIq', 'ADMIN', 'admin@ufide.ac.cr'),
+('profesor', '$2b$10$aCb2CqrheWlQh7h0KM9/3etUtNdfqWgzByyBjCtOAsIIS0SmBlkXe', 'USER', 'profesor@ufide.ac.cr'),
+('estudiante', '$2b$10$2Ki/2UdNHxrBaMkKF/ITVOmVvsFxtvh1mVKH1Udma5InIWb7NdsKC', 'USER', 'estudiante@ufide.ac.cr');
 
 -- Verificar (el password se ve como hash, eso es lo esperado)
-SELECT id, username, rol FROM usuarios;
+SELECT id, username, rol, email FROM usuarios;
 
 -- ============================================================
 -- Queries utiles para demostrar en clase (JPQL / SQL)
