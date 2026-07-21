@@ -27,6 +27,17 @@
             <li class="nav-item">
                 <a class="nav-link" href="/cursos">Cursos</a>
             </li>
+            <!--
+              CLASE 11 - PASO F.3: descomentar. Solo ADMIN ve el link a la
+              gestion de usuarios. Recorda que esto es cosmetico (como en
+              Parte E) - la proteccion real es el @PreAuthorize de clase en
+              UsuarioController (Parte F).
+            -->
+            <!--
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                <a class="nav-link" href="/usuarios">Usuarios</a>
+            </li>
+            -->
         </ul>
         <ul class="navbar-nav">
             <li class="nav-item" sec:authorize="isAuthenticated()">

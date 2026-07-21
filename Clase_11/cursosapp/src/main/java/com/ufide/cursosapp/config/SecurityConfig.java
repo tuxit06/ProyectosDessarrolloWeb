@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+// CLASE 11 - PASO G.3: descomentar este import junto con el @Bean de abajo.
+// import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
 @EnableWebSecurity
@@ -27,6 +29,16 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // CLASE 11 - PASO G.3: descomentar este @Bean. Publica los eventos de
+    // creacion/destruccion de HttpSession al resto de Spring Security. Sin
+    // esto, maximumSessions() de mas abajo cuenta sesiones viejas que el
+    // navegador ya cerro como si siguieran activas (se "desincroniza" con
+    // la realidad).
+    // @Bean
+    // public HttpSessionEventPublisher httpSessionEventPublisher() {
+    //     return new HttpSessionEventPublisher();
+    // }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -35,6 +47,9 @@ public class SecurityConfig {
                 // CLASE 11 - PASO C.1: agregar "/403" a esta lista de rutas
                 // publicas (si no, entrar a /403 tambien pediria login y
                 // generaria un loop cuando @PreAuthorize redirige ahi).
+                // CLASE 11 - PASO G.3 (continua): agregar tambien
+                // "/olvide-password" y "/restablecer-password" - alguien que
+                // olvido su contrasena, por definicion, no esta logueado.
                 .requestMatchers("/", "/login", "/css/**", "/img/**").permitAll()
                 // Todo lo demas (incluido /cursos/**) requiere estar logueado.
                 // La restriccion POR ROL ahora vive en los metodos del
@@ -61,6 +76,15 @@ public class SecurityConfig {
             // redirigir a una pagina 403 propia cuando @PreAuthorize bloquee
             // a alguien. Fijate que el punto y coma final se mueve para aca.
             // .exceptionHandling(ex -> ex.accessDeniedPage("/403"))
+            // CLASE 11 - PASO G.4: descomentar (junto con quitar el punto y
+            // coma de la linea de arriba, igual que en el PASO C.2). Maximo
+            // 1 sesion activa por usuario: si el mismo username se loguea
+            // desde un segundo navegador, maxSessionsPreventsLogin(false)
+            // invalida la sesion VIEJA en vez de bloquear el login nuevo.
+            // .sessionManagement(session -> session
+            //     .maximumSessions(1)
+            //     .maxSessionsPreventsLogin(false)
+            // )
             ;
         return http.build();
     }

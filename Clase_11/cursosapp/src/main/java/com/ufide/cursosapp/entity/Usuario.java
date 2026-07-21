@@ -1,5 +1,9 @@
 package com.ufide.cursosapp.entity;
 
+// CLASE 11 - PASO F.1: descomentar este import (hace falta para
+// resetTokenExpiracion, mas abajo).
+// import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+// CLASE 11 - PASO F.1: descomentar este import (hace falta para @Email).
+// import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -36,6 +42,23 @@ public class Usuario {
     @Column(nullable = false)
     private String rol;
 
+    // CLASE 11 - PASO F.1: descomentar estos dos campos. Email es para el
+    // CRUD de usuarios (Parte F) y para recuperacion de contrasena (Parte G).
+    // La columna queda nullable a nivel de base de datos a proposito, para
+    // no romper las filas que ya existian de S10 cuando Hibernate la agregue
+    // con ddl-auto=update (@NotBlank/@Email solo se validan en el formulario).
+    //
+    // @NotBlank(message = "El email es obligatorio")
+    // @Email(message = "El email no tiene un formato valido")
+    // private String email;
+
+    // CLASE 11 - PASO G.1: token de un solo uso para restablecer la
+    // contrasena, con su fecha de expiracion. UsuarioService los genera en
+    // generarTokenReset() y los limpia (vuelven a null) apenas se usan una
+    // vez - ver cambiarPassword().
+    // private String resetToken;
+    // private LocalDateTime resetTokenExpiracion;
+
     public Usuario() {
     }
 
@@ -57,4 +80,15 @@ public class Usuario {
 
     public String getRol() { return rol; }
     public void setRol(String rol) { this.rol = rol; }
+
+    // CLASE 11 - PASO F.1 (continua): descomentar estos 3 getters/setters
+    // junto con los campos de arriba.
+    // public String getEmail() { return email; }
+    // public void setEmail(String email) { this.email = email; }
+    //
+    // public String getResetToken() { return resetToken; }
+    // public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+    //
+    // public LocalDateTime getResetTokenExpiracion() { return resetTokenExpiracion; }
+    // public void setResetTokenExpiracion(LocalDateTime resetTokenExpiracion) { this.resetTokenExpiracion = resetTokenExpiracion; }
 }

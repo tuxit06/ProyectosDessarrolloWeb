@@ -76,6 +76,18 @@ INSERT INTO usuarios (username, password, rol) VALUES
 SELECT id, username, rol FROM usuarios;
 
 -- ============================================================
+-- CLASE 11 - PASO F.1 (continua): despues de descomentar el campo "email"
+-- en Usuario.java y reiniciar la app (Hibernate agrega la columna sola con
+-- ddl-auto=update), completa los emails de los 3 usuarios de arriba:
+-- UPDATE usuarios SET email = 'admin@ufide.ac.cr' WHERE username = 'admin';
+-- UPDATE usuarios SET email = 'profesor@ufide.ac.cr' WHERE username = 'profesor';
+-- UPDATE usuarios SET email = 'estudiante@ufide.ac.cr' WHERE username = 'estudiante';
+--
+-- Verificar (descomentar junto con los UPDATE de arriba):
+-- SELECT id, username, rol, email FROM usuarios;
+-- ============================================================
+
+-- ============================================================
 -- Queries utiles para demostrar en clase (JPQL / SQL)
 -- ============================================================
 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${usuario.id == null} ? 'Nuevo usuario' : 'Editar usuario'">Usuario</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="container my-4" style="max-width: 720px;">
+    <h1 class="mb-4">
+        <i class="bi bi-person-gear me-2"></i>
+        <span th:text="${usuario.id == null} ? 'Nuevo usuario' : 'Editar usuario'">Usuario</span>
+    </h1>
+
+    <form method="post"
+          th:object="${usuario}"
+          th:action="${usuario.id == null} ? @{/usuarios} : @{/usuarios/{id}(id=${usuario.id})}">
+
+        <input type="hidden" th:field="*{id}">
+
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control"
+                   th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'"
+                   th:field="*{username}"
+                   placeholder="Ej: profesor2">
+            <div class="invalid-feedback" th:errors="*{username}">Error</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control"
+                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                   th:field="*{email}"
+                   placeholder="Ej: profesor2@ufide.ac.cr">
+            <div class="invalid-feedback" th:errors="*{email}">Error</div>
+            <div class="form-text">Se usa para el flujo de "olvide mi contrasena".</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">
+                Contrasena
+                <span class="text-muted small" th:if="${usuario.id != null}">(dejar en blanco para no cambiarla)</span>
+            </label>
+            <input type="password" class="form-control"
+                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                   th:field="*{password}"
+                   th:placeholder="${usuario.id == null} ? 'Contrasena inicial' : '••••••••'">
+            <div class="invalid-feedback" th:errors="*{password}">Error</div>
+            <!--
+              Este campo NUNCA muestra el hash guardado (el Controller lo
+              deja en blanco al abrir el form de edicion, ver PASO F).
+              Si viaja vacio en el POST, UsuarioService.actualizar() conserva
+              la contrasena actual sin tocarla.
+            -->
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Rol</label>
+            <select class="form-select"
+                    th:classappend="${#fields.hasErrors('rol')} ? 'is-invalid'"
+                    th:field="*{rol}">
+                <option value="ADMIN">ADMIN</option>
+                <option value="USER">USER</option>
+            </select>
+            <div class="invalid-feedback" th:errors="*{rol}">Error</div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a class="btn btn-secondary" th:href="@{/usuarios}">
+                <i class="bi bi-arrow-left me-1"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>
+                <span th:text="${usuario.id == null} ? 'Crear' : 'Guardar cambios'">Guardar</span>
+            </button>
+        </div>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/header :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
