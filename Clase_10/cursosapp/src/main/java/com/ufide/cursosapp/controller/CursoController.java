@@ -21,11 +21,13 @@ import com.ufide.cursosapp.service.ProfesorService;
 @RequestMapping("/cursos")
 public class CursoController {
 
-    @Autowired
-    private CursoService cursoService;
+    private final CursoService cursoService;
+    private final ProfesorService profesorService;
 
-    @Autowired
-    private ProfesorService profesorService;
+    public CursoController(CursoService cursoServiceI, ProfesorService profesorServiceI) {
+        this.cursoService = cursoServiceI;
+        this.profesorService = profesorServiceI;
+    }
 
     @GetMapping
     public String listar(Model modelo) {
@@ -50,8 +52,8 @@ public class CursoController {
 
     @PostMapping
     public String guardar(@Valid @ModelAttribute("curso") Curso curso,
-                          BindingResult result,
-                          RedirectAttributes ra) {
+            BindingResult result,
+            RedirectAttributes ra) {
         if (result.hasErrors()) {
             return "cursos/form";
         }
@@ -71,9 +73,9 @@ public class CursoController {
 
     @PostMapping("/{id}")
     public String actualizar(@PathVariable Long id,
-                             @Valid @ModelAttribute("curso") Curso curso,
-                             BindingResult result,
-                             RedirectAttributes ra) {
+            @Valid @ModelAttribute("curso") Curso curso,
+            BindingResult result,
+            RedirectAttributes ra) {
         if (result.hasErrors()) {
             return "cursos/form";
         }

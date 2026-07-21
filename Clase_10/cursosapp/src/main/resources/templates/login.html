@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,65 +9,67 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
+
 <body>
 
-<div th:replace="~{fragments/header :: navbar}"></div>
+    <div th:replace="~{fragments/header :: navbar}"></div>
 
-<main class="container my-5" style="max-width: 420px;">
-    <div class="card shadow border-0">
-        <div class="card-body p-4">
-            <h1 class="h4 mb-4 text-center brand-accent">
-                <i class="bi bi-shield-lock me-1"></i> Iniciar sesion
-            </h1>
+    <main class="container my-5" style="max-width: 420px;">
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
+                <h1 class="h4 mb-4 text-center brand-accent">
+                    <i class="bi bi-shield-lock me-1"></i> Iniciar sesion
+                </h1>
 
-            <!--
+                <!--
               CLASE 10 - PASO D.1: descomentar estos dos mensajes.
               Spring Security redirige solo a /login?error si las credenciales
               son invalidas, y a /login?logout despues de un logout exitoso -
               no hace falta ningun codigo en el controller para esto.
-
-            <div class="alert alert-danger" th:if="${param.error}">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Usuario o contrasena incorrectos.
-            </div>
-
-            <div class="alert alert-success" th:if="${param.logout}">
-                <i class="bi bi-check-circle me-2"></i>
-                Sesion cerrada correctamente.
-            </div>
             -->
+                <div class="alert alert-danger" th:if="${param.error}">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Usuario o contrasena incorrectos.
+                </div>
 
-            <!--
+                <div class="alert alert-success" th:if="${param.logout}">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Sesion cerrada correctamente.
+                </div>
+
+
+                <!--
               CLASE 10 - PASO D.2: descomentar el formulario de login.
               action="/login" y method="post" son el endpoint que formLogin()
               intercepta automaticamente - no existe (ni hace falta) un
               LoginController. Los nombres de los campos, name="username" y
               name="password", son los que Spring Security espera por default.
-
-            <form th:action="@{/login}" method="post">
-                <div class="mb-3">
-                    <label class="form-label">Usuario</label>
-                    <input type="text" class="form-control" name="username" autofocus required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Contrasena</label>
-                    <input type="password" class="form-control" name="password" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
-                </button>
-            </form>
             -->
+                <form th:action="@{/login}" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario</label>
+                        <input type="text" class="form-control" name="username" autofocus required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contrasena</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
+                    </button>
+                </form>
 
-            <p class="text-muted small mt-3 mb-0">
-                Usuarios de prueba (ver <code>seed-data.sql</code>):
-                <code>admin / admin123</code> y <code>profesor / profesor123</code>.
-            </p>
+
+                <p class="text-muted small mt-3 mb-0">
+                    Usuarios de prueba (ver <code>seed-data.sql</code>):
+                    <code>admin / admin123</code> y <code>profesor / profesor123</code>.
+                </p>
+            </div>
         </div>
-    </div>
-</main>
+    </main>
 
-<footer th:replace="~{fragments/header :: footer}"></footer>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <footer th:replace="~{fragments/header :: footer}"></footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
