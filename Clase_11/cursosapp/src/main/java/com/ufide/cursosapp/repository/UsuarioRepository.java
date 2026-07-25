@@ -14,9 +14,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     // CLASE 11 - PASO F.2: descomentar para el formulario de "olvide mi
     // contrasena" (Parte G) - busca al usuario por su email en vez de username.
-    // Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByEmail(String email);
 
     // CLASE 11 - PASO G.2: descomentar para validar el token que llega por
     // el link del correo antes de mostrar el formulario de restablecer contrasena.
-    // Optional<Usuario> findByResetToken(String resetToken);
+    Optional<Usuario> findByResetToken(String resetToken);
 }

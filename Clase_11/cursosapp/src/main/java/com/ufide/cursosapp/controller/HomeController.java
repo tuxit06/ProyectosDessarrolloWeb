@@ -15,8 +15,8 @@ public class HomeController {
         modelo.addAttribute("curso", "SC-403 Desarrollo de Aplicaciones Web");
         return "home";
     }
-	
-	@GetMapping("/login")
+
+    @GetMapping("/login")
     public String login() {
         return "login";
     }
@@ -26,8 +26,8 @@ public class HomeController {
     // tiene el rol necesario (ej. USER intentando eliminar un curso).
     // Necesita el template templates/403.html (PASO C.4).
     //
-    // @GetMapping("/403")
-    // public String accesoDenegado() {
-    //     return "403";
-    // }
+    @GetMapping("/403")
+    public String accesoDenegado() {
+        return "403";
+    }
 }

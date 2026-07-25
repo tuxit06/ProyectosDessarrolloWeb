@@ -2,7 +2,7 @@ package com.ufide.cursosapp.entity;
 
 // CLASE 11 - PASO F.1: descomentar este import (hace falta para
 // resetTokenExpiracion, mas abajo).
-// import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 // CLASE 11 - PASO F.1: descomentar este import (hace falta para @Email).
-// import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -48,16 +48,16 @@ public class Usuario {
     // no romper las filas que ya existian de S10 cuando Hibernate la agregue
     // con ddl-auto=update (@NotBlank/@Email solo se validan en el formulario).
     //
-    // @NotBlank(message = "El email es obligatorio")
-    // @Email(message = "El email no tiene un formato valido")
-    // private String email;
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El email no tiene un formato valido")
+    private String email;
 
     // CLASE 11 - PASO G.1: token de un solo uso para restablecer la
     // contrasena, con su fecha de expiracion. UsuarioService los genera en
     // generarTokenReset() y los limpia (vuelven a null) apenas se usan una
     // vez - ver cambiarPassword().
-    // private String resetToken;
-    // private LocalDateTime resetTokenExpiracion;
+    private String resetToken;
+    private LocalDateTime resetTokenExpiracion;
 
     public Usuario() {
     }
@@ -69,26 +69,63 @@ public class Usuario {
         this.rol = rol;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getRol() { return rol; }
-    public void setRol(String rol) { this.rol = rol; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
 
     // CLASE 11 - PASO F.1 (continua): descomentar estos 3 getters/setters
     // junto con los campos de arriba.
-    // public String getEmail() { return email; }
-    // public void setEmail(String email) { this.email = email; }
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     //
-    // public String getResetToken() { return resetToken; }
-    // public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+    public String getResetToken() {
+        return resetToken;
+    }
+
+    public void setResetToken(String resetToken) {
+        this.resetToken = resetToken;
+    }
+
     //
-    // public LocalDateTime getResetTokenExpiracion() { return resetTokenExpiracion; }
-    // public void setResetTokenExpiracion(LocalDateTime resetTokenExpiracion) { this.resetTokenExpiracion = resetTokenExpiracion; }
+    public LocalDateTime getResetTokenExpiracion() {
+        return resetTokenExpiracion;
+    }
+
+    public void setResetTokenExpiracion(LocalDateTime resetTokenExpiracion) {
+        this.resetTokenExpiracion = resetTokenExpiracion;
+    }
 }
