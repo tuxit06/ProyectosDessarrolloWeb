@@ -94,6 +94,24 @@ Una **API** (Application Programming Interface) es, en el fondo, un contrato: un
 
 **Para pensar:** ¿por qué les parece que una API "sin estado" es más fácil de escalar (correr en varios servidores al mismo tiempo) que una que depende de sesiones guardadas en memoria? (Pista: si el servidor no recuerda nada entre requests, no importa a CUÁL servidor llega cada request.)
 
+### Qué significa REST (el acrónimo)
+
+**REST = REpresentational State Transfer**, un término acuñado por Roy Fielding en el año 2000. No es un protocolo ni una librería — es un **estilo** para diseñar APIs. "Representational" (representacional) porque el servidor nunca manda el recurso en sí (la fila de la base de datos): manda una **representación** de su estado, en nuestro caso JSON. Los tres puntos de arriba (URLs=recursos, HTTP sin estado, verbos con semántica) son, justamente, las reglas de ese estilo — REST es el nombre formal de algo que ya venías construyendo. Una API "RESTful" es simplemente una que sigue estas reglas de forma consistente.
+
+### Qué es JSON y quién lo convierte (Jackson)
+
+**JSON** (JavaScript Object Notation) es un formato de texto plano para representar datos con pares clave-valor, listas y objetos anidados — pese al nombre, es independiente del lenguaje: cualquier lenguaje moderno lo puede leer y escribir. Por ejemplo:
+
+```json
+{
+  "id": 3,
+  "nombre": "Fundamentos Web",
+  "profesor": { "id": 1, "nombre": "Ana Lopez" }
+}
+```
+
+Spring Boot no te obliga a convertir esto a mano: trae incluida y configurada por defecto una librería llamada **Jackson**, que hace la conversión en ambas direcciones. Cuando un método de un `@RestController` devuelve un objeto Java, Jackson lo **serializa** a JSON antes de mandar la respuesta. Cuando usás `@RequestBody` (Parte A/E), Jackson hace el camino inverso: **deserializa** el JSON entrante y arma el objeto Java. Nunca llamás a Jackson directamente — por eso un `List<Curso>` se convierte "solo" en el JSON que vas a ver en la Parte A.
+
 ---
 
 ## Parte A — Crear el `CursoRestController`
@@ -108,11 +126,21 @@ Una **API** (Application Programming Interface) es, en el fondo, un contrato: un
 
 ---
 
-## Parte B — CORS
+## Parte B — CORS (Cross-Origin Resource Sharing)
+
+**CORS** son las siglas de **Cross-Origin Resource Sharing** ("compartición de recursos entre orígenes"): la política que usa el navegador para decidir si un script de JavaScript, corriendo en un origen (dominio+puerto), puede leer la respuesta de un request a OTRO origen distinto. Importante: **CORS es una restricción del navegador, no del servidor** — Postman, `curl`, o una app móvil no están sujetos a ella.
 
 1. Abrí `config/package-info.md` y copiá el código completo a un archivo nuevo `config/CorsConfig.java`.
 2. Este bean define qué orígenes (dominios/puertos distintos al de tu API) pueden llamarla desde JavaScript corriendo en un navegador.
 3. En `config/SecurityConfig.java`, descomentá `.cors(cors -> {})` al principio de la cadena de filtros (**PASO C.1**) — esto le dice a Spring Security que use el bean `CorsConfigurationSource` que acabás de crear.
+
+### Bonus — ver un error real de CORS (opcional)
+
+Si querés ver el error en carne propia en vez de solo leer sobre él:
+
+1. Creá un archivo `test.html` con un `<script>` que haga `fetch('http://localhost:8080/api/cursos').then(r => r.json()).then(console.log).catch(console.error)`.
+2. Serví ese HTML con un servidor simple en un puerto que **no** esté en `CorsConfig.java` (por ejemplo `python -m http.server 8000`) y abrilo en el navegador. En la consola de DevTools vas a ver algo como: `"...has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present..."` — el navegador bloqueó **leer** la respuesta, aunque el servidor haya contestado 200.
+3. Ahora serví el mismo HTML en un puerto que sí esté permitido (`CorsConfig.java` trae `http://127.0.0.1:5500` de ejemplo — funciona bien con la extensión Live Server de VS Code) y confirmá que ahora sí se ve el JSON en consola.
 
 ---
 
@@ -159,15 +187,19 @@ El cliente manda ese token en cada request futuro, en el header `Authorization: 
 1. Abrí `security/package-info.md` y copiá el bloque del **PASO E.1** a un archivo nuevo `security/JwtService.java`.
 2. Copiá el bloque del **PASO E.2** a un archivo nuevo `security/JwtAuthFilter.java`.
 3. Abrí `controller/package-info.md` y copiá el bloque del **PASO E.3** a un archivo nuevo `controller/AuthController.java`.
-4. En `config/SecurityConfig.java`, hacé el **PASO E.4** completo: descomentá los imports de arriba del archivo, el campo `jwtAuthFilter`, el bean `authenticationManager(...)`, volvé a **comentar** la línea del PASO C.2 (`/api/**` público — ya cumplió su propósito), descomentá las dos líneas nuevas (`/api/auth/login` público + resto de `/api/**` autenticado), y descomentá `.addFilterBefore(...)` al final de la cadena (recordá borrar el punto y coma que quedó después de `.sessionManagement(...)` y dejarlo solo al final, después de `addFilterBefore`).
+4. En `config/SecurityConfig.java`, hacé el **PASO E.4** completo: descomentá los imports de arriba del archivo, el campo `jwtAuthFilter`, el bean `authenticationManager(...)`, la línea `.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))` (ver el "Para pensar" de abajo — sin esto el login de la API no funciona), volvé a **comentar** la línea del PASO C.2 (`/api/**` público — ya cumplió su propósito), descomentá las dos líneas nuevas (`/api/auth/login` público + resto de `/api/**` autenticado), y descomentá `.addFilterBefore(...)` al final de la cadena (recordá borrar el punto y coma que quedó después de `.sessionManagement(...)` y dejarlo solo al final, después de `addFilterBefore`).
 5. En `controller/CursoRestController.java` (creado en la Parte A), descomentá las 3 líneas `@PreAuthorize("hasRole('ADMIN')")` (**PASO E.5**) — una arriba de `crear()`, una arriba de `actualizar()`, una arriba de `eliminar()`.
 6. Reiniciá la app.
 
 **Para pensar:** `@PreAuthorize("hasRole('ADMIN')")` en `CursoRestController` es EXACTAMENTE la misma anotación que ya usaste en `CursoController` (S11) para las vistas HTML. No le importa si el `Authentication` en el `SecurityContext` vino de una sesión de navegador (`formLogin`) o de un JWT válido (`JwtAuthFilter`, recién armado) — es el mismo mecanismo de autorización, alimentado por dos formas distintas de autenticarse.
 
+**Por qué hace falta la línea de CSRF:** Spring Security protege por defecto cualquier `POST`/`PUT`/`DELETE` con un token CSRF (por eso `login.html` ya lo trae como campo oculto — es una protección pensada para formularios con sesión/cookie). Postman no manda ningún token CSRF, así que sin esa línea el `CsrfFilter` rechaza el login de la API — y no vas a ver un error claro: Spring Security redirige ese rechazo hacia `/403`, que es una página `GET`, así que el resultado es un confuso 405 "POST no soportado" en vez de un mensaje sobre CSRF. `/api/**` no necesita esta protección porque no usa cookies de sesión — se autentica con el JWT en el header `Authorization`.
+
 ---
 
 ## Parte F — Probar todo con Postman
+
+**Importante antes de empezar:** un endpoint `POST` (como `/api/auth/login` o `POST /api/cursos`) **no se puede probar tipeando la URL directo en la barra de direcciones del navegador** — eso siempre manda un `GET`, nunca un `POST`, sin importar qué haya del otro lado. Vas a ver el error `HttpRequestMethodNotSupportedException: Request method 'GET' is not supported` si lo intentás así. Para mandar `POST`/`PUT`/`DELETE` con un body JSON necesitás Postman (o `curl`, o un `fetch` con `method: 'POST'`).
 
 Con la app corriendo, probá el flujo completo:
 
@@ -175,6 +207,12 @@ Con la app corriendo, probá el flujo completo:
 2. **Probar con credenciales incorrectas:** mismo endpoint con un password equivocado → 401.
 3. **Llamar la API sin token:** `GET /api/cursos` sin header `Authorization` → 401 (antes, en la Parte C, esta misma request daba 200 — ahora ya no).
 4. **Llamar la API con token:** agregá el header `Authorization: Bearer <token que copiaste del paso 1>` y repetí `GET /api/cursos` → 200 + JSON.
+
+   **Cómo hacerlo en Postman, paso a paso (dos formas, elegí una):**
+   - **Opción A — pestaña Authorization:** en la request, pestaña `Authorization` → Auth Type → **`Bearer Token`** (⚠️ NO elijas `JWT Bearer` — ese modo hace que Postman **genere y firme su propio token** con un secreto que vos pongas, no usa el que ya te dio el login). En el campo `Token` que aparece, pegá el valor de `token` que te devolvió el login (el string largo, sin las comillas).
+   - **Opción B — pestaña Headers:** agregá a mano un header `Key: Authorization`, `Value: Bearer <token>` (con un espacio entre `Bearer` y el token).
+
+   Cualquiera de las dos opciones termina mandando el mismo header por debajo — es solo una diferencia de qué tan cómodo te resulta escribirlo.
 5. **Probar los roles:** `GET /api/roles` con el token → `["ADMIN","USER"]`.
 6. **Probar la escritura con ADMIN:** `POST /api/cursos` con el token de `admin` y un body válido → 201 + header `Location`.
 7. **Probar la escritura con USER:** pedí un token para `profesor` o `estudiante` (`POST /api/auth/login`) y repetí el `POST /api/cursos` con ESE token → 403 (`@PreAuthorize` los bloquea, aunque el JWT sea válido).
@@ -184,9 +222,9 @@ Si tu profesor comparte la colección de Postman ampliada, la request de "Login"
 
 ---
 
-## Sobre microservicios (no es parte de este lab)
+## Bonus — Probar la API sin Postman (springdoc-openapi)
 
-En la teoría de esta clase vas a ver una introducción a **microservicios** — qué son, cuándo tiene sentido usarlos, y por qué **no** se implementan en este curso (dividir `cursosapp` en varios servicios independientes es una decisión de arquitectura que solo se justifica a partir de cierta escala de equipo/proyecto). No hay ningún paso de laboratorio sobre esto — es contenido para que lo tengas mapeado conceptualmente y sepas dónde seguir leyendo si te interesa (ver la tabla de recursos más abajo).
+No es parte obligatoria del lab, pero vale la pena que sepas que existe: **springdoc-openapi** (dependencia `springdoc-openapi-starter-webmvc-ui` en el `pom.xml`) lee automáticamente tus clases `@RestController` y genera una página interactiva en `/swagger-ui.html` donde podés ver y probar cada endpoint desde el navegador, sin instalar Postman. Es el equivalente de Spring Boot a "Swagger". Hoy no lo vamos a instalar (Postman ya cubre lo que necesitamos), pero es una herramienta común en proyectos reales — documentación y pruebas "gratis" a partir del mismo código.
 
 ---
 
@@ -200,10 +238,14 @@ En la teoría de esta clase vas a ver una introducción a **microservicios** —
 | Creaste un usuario con un rol con typo y no tiró error | Falta el PASO D.3 completo (`validarRol()` descomentado y llamado desde `crear()`/`actualizar()`). |
 | `POST /api/auth/login` da 401 con credenciales que sí existen | Revisá que el body sea `{"username": "...", "password": "..."}` (contraseña en texto plano, no el hash), y que coincida con `seed-data.sql`. |
 | `GET /api/cursos` da 401 aunque mandaste el header | El header tiene que llamarse exactamente `Authorization`, con valor `Bearer <token>` (con un espacio después de `Bearer`). Confirmá también que hiciste el PASO E.4 completo. |
+| `GET /api/cursos` da 401 y en la pestaña Authorization elegiste "JWT Bearer" | Ese Auth Type NO es lo que necesitás — hace que Postman genere y firme un token nuevo con un secreto que vos pongas, ignorando el token real que te dio el login. Cambiá a Auth Type **"Bearer Token"** y pegá ahí el token que copiaste, o agregá el header `Authorization: Bearer <token>` a mano en la pestaña Headers. |
 | `POST /api/cursos` da 403 con un token válido | El JWT es válido pero el usuario no es ADMIN, o falta el PASO E.5 (`@PreAuthorize` descomentado en `CursoRestController`). |
 | Error de compilación en `SecurityConfig.java` después del PASO E.4 | Revisá que quede un solo punto y coma, al final de toda la cadena (después de `.addFilterBefore(...)`), no después de `.sessionManagement(...)`. |
 | `POST`/`PUT` devuelven 400 sin mensaje claro | Revisá el body: falta un campo validado (`@NotBlank`, `@NotNull`, `@Min`/`@Max`) o `profesor` no trae `id`. |
 | Postman con `Content-Type` mal configurado | El body tiene que ser `raw` + `JSON`, con el header `Content-Type: application/json`. |
+| `HttpRequestMethodNotSupportedException: Request method 'GET' is not supported` al probar el login | Estás tipeando la URL en la barra de direcciones del navegador — eso siempre manda `GET`. Usá Postman con el método `POST` seleccionado. |
+| `HttpRequestMethodNotSupportedException: Request method 'POST' is not supported`, y el header `Allow` de la respuesta dice `GET` | Esto casi siempre es CSRF, no un problema de reinicio: si no descomentaste la línea `.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))` del PASO E.4, `CsrfFilter` rechaza el POST y Spring Security lo reenvía internamente a `/403` (que es `GET`-only) — de ahí el 405 confuso. Revisá que esa línea esté descomentada en `SecurityConfig.java`. |
+| `HttpRequestMethodNotSupportedException: Request method 'POST' is not supported` en Postman, con método y `Content-Type` ya correctos, y ya descartaste lo de CSRF de arriba | La app no se reinició después de crear `AuthController.java`/terminar el PASO E.4 — un `mapping` nuevo no aparece hasta el próximo reinicio. Reiniciá la app por completo y volvé a probar; si sigue igual, confirmá que no quedó otro proceso viejo escuchando en el puerto 8080. |
 
 ---
 
@@ -217,8 +259,7 @@ En la teoría de esta clase vas a ver una introducción a **microservicios** —
 | Baeldung — Spring Boot Bean Validation (`@Valid`) | https://www.baeldung.com/spring-boot-bean-validation |
 | jwt.io — Introduction to JSON Web Tokens | https://jwt.io/introduction |
 | Baeldung — JWT with Spring Security | https://www.baeldung.com/spring-security-oauth-jwt |
-| Baeldung — Introduction to Microservices | https://www.baeldung.com/cs/microservices |
-| martinfowler.com — Microservices (artículo de referencia) | https://martinfowler.com/articles/microservices.html |
+| springdoc-openapi — documentación oficial | https://springdoc.org/ |
 
 ---
 

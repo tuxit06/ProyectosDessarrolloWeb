@@ -17,6 +17,8 @@ Los verbos HTTP tienen semántica esperada, aunque Spring no la fuerce por sí s
 
 Los códigos de estado HTTP vienen agrupados por familia: `2xx` éxito, `3xx` redirección, `4xx` error del cliente (el request está mal armado o no tiene permiso), `5xx` error del servidor. En este lab usaste `200`, `201`, `204` (éxito) y `400`, `401`, `403`, `404` (error del cliente).
 
+**¿Qué significa REST?** Las siglas vienen de **REpresentational State Transfer**, un término acuñado por Roy Fielding en el año 2000. No es un protocolo ni una librería — es un **estilo** para diseñar APIs. "Representational" (representacional) porque el servidor nunca manda el recurso en sí (la fila de la base de datos): manda una **representación** de su estado, en este caso JSON. Las tres reglas de arriba (URLs=recursos, HTTP sin estado, verbos con semántica) son justamente los principios de ese estilo — REST es el nombre formal de algo que ya construiste. Una API "RESTful" es, en el fondo, una que sigue estas reglas de forma consistente.
+
 ---
 
 ## 1. De vistas HTML a JSON — dos formas de responder
@@ -26,6 +28,18 @@ Hasta S11, `CursoController` era un `@Controller`: cada método devuelve un `Str
 `CursoRestController` es distinto: es un `@RestController`, que equivale a `@Controller` + `@ResponseBody` en **todos** sus métodos. Eso significa que lo que devuelve cada método no es el nombre de una vista — es el objeto en sí, que Spring convierte automáticamente a JSON (usando la librería Jackson, incluida en `spring-boot-starter-webmvc`).
 
 Las dos clases conviven en el mismo proyecto, sirviendo los mismos datos de dos formas distintas: `/cursos` para navegadores, `/api/cursos` para cualquier cliente que hable JSON.
+
+**¿Qué es JSON exactamente, y quién hace la conversión?** JSON (JavaScript Object Notation) es un formato de texto plano para representar datos: pares clave-valor, listas, objetos anidados. Pese al nombre, es independiente del lenguaje — cualquier lenguaje moderno lo lee y escribe. Ejemplo:
+
+```json
+{
+  "id": 3,
+  "nombre": "Fundamentos Web",
+  "profesor": { "id": 1, "nombre": "Ana Lopez" }
+}
+```
+
+La conversión Java ↔ JSON la hace **Jackson**, una librería que `spring-boot-starter-webmvc` ya trae incluida y configurada. Cuando un método de `@RestController` devuelve un objeto Java, Jackson lo **serializa** a JSON antes de mandar la respuesta. Cuando usás `@RequestBody`, Jackson hace el camino inverso: **deserializa** el JSON entrante y arma el objeto Java. Nunca la llamás directamente — por eso un `List<Curso>` se convierte "solo" en el JSON que viste al probar `/api/cursos`.
 
 ---
 
@@ -105,9 +119,9 @@ El enum `Rol { ADMIN, USER }` no cambia cómo funciona `@PreAuthorize("hasRole('
 
 ---
 
-## 9. JWT — la estructura y el flujo completo
+## 9. JWT (JSON Web Token) — la estructura y el flujo completo
 
-Un JWT tiene tres partes separadas por puntos, cada una en Base64: `header.payload.signature`.
+Un JWT (JSON Web Token) tiene tres partes separadas por puntos, cada una en Base64: `header.payload.signature`.
 
 - **Header:** qué algoritmo de firma se usó (en este lab, HMAC-SHA256).
 - **Payload (claims):** los datos que el servidor decidió incluir — acá, el `username` (como *subject*) y el `rol`.
@@ -125,11 +139,9 @@ El flujo completo que implementaste:
 
 ---
 
-## 10. Microservicios — qué son, y por qué no se implementan en este curso
+## 10. Bonus — probar la API sin Postman (springdoc-openapi)
 
-Un microservicio divide una aplicación en varios servicios independientes (cada uno con su propio deploy, y a veces su propia base de datos), que se comunican entre sí por red (típicamente APIs REST, como las que armaste hoy). `cursosapp` es lo opuesto: un **monolito** — un solo deploy, una sola base de datos, un solo repositorio.
-
-Dividir en microservicios tiene sentido a partir de cierta escala (equipos grandes que necesitan desplegar partes de la app de forma independiente, sin bloquearse entre sí), pero introduce complejidad real: comunicación entre servicios que puede fallar en tránsito, consistencia de datos repartida en varias bases, más piezas que monitorear. Para un proyecto del tamaño del curso, esa complejidad no se justifica — por eso se menciona como concepto, sin implementarlo.
+**springdoc-openapi** (dependencia `springdoc-openapi-starter-webmvc-ui`) lee automáticamente las clases `@RestController` de tu proyecto y genera documentación OpenAPI más una página interactiva en `/swagger-ui.html`, donde podés ver y probar cada endpoint desde el navegador sin instalar nada aparte — es el equivalente de Spring Boot a "Swagger". No se usó en este lab (Postman alcanza), pero vale la pena conocerlo para proyectos propios: documentación y pruebas "gratis" a partir del mismo código.
 
 ---
 
@@ -140,6 +152,7 @@ Dividir en microservicios tiene sentido a partir de cierta escala (equipos grand
 | ¿`@RestController` reemplaza a `@Controller`? | No — conviven. Usás `@Controller` cuando querés devolver vistas HTML, `@RestController` cuando querés devolver JSON. `cursosapp` tiene ambos. |
 | ¿Por qué mi POST devuelve 400 y no entiendo por qué? | Revisá el JSON del body — probablemente falta un campo validado, o el `profesor` no trae un `id` válido. |
 | ¿Postman necesita estar logueado para llamar la API? | Sí, desde la Parte E — hay que pedir un JWT primero (`POST /api/auth/login`) y mandarlo en cada request (`Authorization: Bearer <token>`). |
+| ¿Necesito manejar CSRF para llamar la API con Postman? | No manejás nada vos — pero el servidor SÍ necesita tener CSRF deshabilitado para `/api/**` (`.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))` en `SecurityConfig`, PASO E.4). CSRF y JWT son cosas distintas: CSRF protege formularios con sesión/cookie, JWT es la forma de autenticarse sin sesión. Si esa línea falta, el login de la API falla con un 405 confuso en vez de un error claro — ver "Problemas comunes" en `lab_clase12.md`. |
 | Mi frontend en React no puede llamar la API, dice error de CORS | Revisá que el origen exacto (con el puerto) esté en `setAllowedOrigins(...)` de `CorsConfig`, y que `.cors(cors -> {})` esté activo en `SecurityConfig`. |
 | ¿Por qué `listar()` no puede usar el mismo método que ya tenía el `CursoController`? | Sí puede, pero ese método (`listar()` a secas) no resuelve `profesor` — por eso la API usa `listarConProfesor()`, igual que la vista HTML desde S9. |
 | ¿`hasRole('ADMIN')` deja de funcionar si uso el enum `Rol`? | No — siguen siendo compatibles. El enum ayuda en el código Java (evita typos), pero `@PreAuthorize` sigue leyendo un string. |
@@ -158,5 +171,4 @@ Dividir en microservicios tiene sentido a partir de cierta escala (equipos grand
 | MDN — Cross-Origin Resource Sharing (CORS) | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS |
 | jwt.io — Introduction to JSON Web Tokens | https://jwt.io/introduction |
 | Baeldung — JWT with Spring Security | https://www.baeldung.com/spring-security-oauth-jwt |
-| Baeldung — Introduction to Microservices | https://www.baeldung.com/cs/microservices |
-| martinfowler.com — Microservices | https://martinfowler.com/articles/microservices.html |
+| springdoc-openapi — documentación oficial | https://springdoc.org/ |

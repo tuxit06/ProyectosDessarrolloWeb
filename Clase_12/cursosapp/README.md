@@ -38,9 +38,9 @@ Ver el paso a paso completo en `Para_Estudiantes/lab_clase12.md`.
 ## Qué NO se resuelve en esta clase (fuera de alcance)
 
 - Refresh tokens (el JWT expira y hay que volver a loguearse).
-- Documentación autogenerada (Swagger/OpenAPI).
+- Documentación autogenerada (Swagger/OpenAPI) — se menciona como bonus (springdoc-openapi), no se implementa.
 - Paginación de resultados.
-- Microservicios — se cubre solo como teoría en las slides, sin implementación.
+- Microservicios — no se cubre en esta clase (hueco del programa oficial, ver `_gestion/plan_semanal.md`).
 
 ---
 

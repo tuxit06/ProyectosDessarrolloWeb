@@ -1,5 +1,6 @@
 package com.ufide.cursosapp.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,13 +22,11 @@ import com.ufide.cursosapp.service.ProfesorService;
 @RequestMapping("/cursos")
 public class CursoController {
 
-    private final CursoService cursoService;
-    private final ProfesorService profesorService;
+    @Autowired
+    private CursoService cursoService;
 
-    public CursoController(CursoService cursoServiceI, ProfesorService profesorServiceI) {
-        this.cursoService = cursoServiceI;
-        this.profesorService = profesorServiceI;
-    }
+    @Autowired
+    private ProfesorService profesorService;
 
     // Sin @PreAuthorize: cualquier usuario autenticado (ADMIN o USER) puede
     // listar y ver el detalle de un curso. La restriccion es solo para

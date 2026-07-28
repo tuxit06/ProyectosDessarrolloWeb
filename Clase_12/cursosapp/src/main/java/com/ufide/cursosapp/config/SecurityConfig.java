@@ -65,6 +65,16 @@ public class SecurityConfig {
             // CLASE 12 - PASO C.1: descomentar esta linea para activar el
             // CorsConfigurationSource bean (CorsConfig, PASO B.1).
             // .cors(cors -> {})
+            //
+            // CLASE 12 - PASO E.4: descomentar esta linea junto con el resto
+            // del PASO E.4. CSRF protege formularios con sesion/cookie (por
+            // eso login.html ya trae su token oculto) - no aplica a /api/**,
+            // que se autentica con un JWT en el header Authorization, sin
+            // cookie de sesion. SIN esta linea, el login de la API (y
+            // cualquier POST/PUT/DELETE a /api/**) es rechazado por el
+            // CsrfFilter y termina en un 405 confuso sobre /403 en vez de
+            // funcionar - probalo vos mismo si te salteas este paso.
+            // .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
             .authorizeHttpRequests(auth -> auth
                 // Publico: inicio, login, estilos e imagenes, la pagina 403,
                 // y el flujo de recuperacion de contrasena (heredado de S11).

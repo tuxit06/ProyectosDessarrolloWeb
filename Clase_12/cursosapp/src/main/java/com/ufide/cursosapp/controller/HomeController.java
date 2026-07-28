@@ -16,11 +16,6 @@ public class HomeController {
         return "home";
     }
 
-    @GetMapping("/login")
-    public String login() {
-        return "login";
-    }
-
     // Pagina de "acceso denegado" - a donde SecurityConfig redirige cuando
     // @PreAuthorize bloquea a un usuario autenticado que no tiene el rol
     // necesario (ej. USER intentando eliminar un curso). Ver PASO C.2.
