@@ -74,12 +74,12 @@
         <!-- ============================================================== -->
 
         <!-- Descomentar cuando anadimos validaciones al Curso (PARTE A.4) -->
-        <!--
+        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-        -->
+        
 
         <!-- Descomentar cuando agregamos subida de imagenes con Firebase (PARTE E) -->
         <!--
